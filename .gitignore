@@ -1,0 +1,33 @@
+# Vault .gitignore - Keep secrets out, keep trading system in
+
+# Secrets & credentials
+.env
+node_modules/
+package-lock.json
+
+# API keys - never commit
+03_Knowledge/api_keys.md
+
+# Obsidian
+.obsidian/workspace.json
+.obsidian/graph.json
+
+# Embeddings (can be regenerated)
+05_Meta/embeddings.json
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Trading model checkpoints (large binaries)
+*.pkl
+*.h5
+*.pt
+02_Projects/top_gainers/models/

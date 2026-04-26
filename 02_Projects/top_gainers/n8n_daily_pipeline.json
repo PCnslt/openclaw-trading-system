@@ -1,0 +1,59 @@
+{
+  "name": "Daily Gainers Pipeline",
+  "nodes": [
+    {
+      "id": "trigger-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [240, 300],
+      "parameters": {}
+    },
+    {
+      "id": "trigger-cron",
+      "name": "Daily 3 PM EST",
+      "type": "n8n-nodes-base.cron",
+      "position": [240, 500],
+      "parameters": {
+        "triggerTimes": {
+          "item": [{"mode": "everyDay", "hour": 15, "minute": 0}]
+        }
+      }
+    },
+    {
+      "id": "run-features",
+      "name": "Build Features",
+      "type": "n8n-nodes-base.executeCommand",
+      "position": [500, 300],
+      "parameters": {
+        "command": "C:\\Users\\pcnsl\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "commandArguments": "02_Projects\\scripts\\feature_pipeline.py --date={{$now.format('YYYY-MM-DD')}}"
+      }
+    },
+    {
+      "id": "run-predict",
+      "name": "Predict Gainers",
+      "type": "n8n-nodes-base.executeCommand",
+      "position": [760, 300],
+      "parameters": {
+        "command": "C:\\Users\\pcnsl\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "commandArguments": "02_Projects\\scripts\\predict_gainers.py --date={{$now.format('YYYY-MM-DD')}}"
+      }
+    },
+    {
+      "id": "log-to-vault",
+      "name": "Log to Vault",
+      "type": "n8n-nodes-base.writeFile",
+      "position": [1020, 300],
+      "parameters": {
+        "fileName": "02_Projects\\top_gainers\\prediction_{{ $now.format('YYYY-MM-DD') }}.json",
+        "content": "={{ $json }}"
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {"main": [[{"node": "Build Features", "type": "main"}]]},
+    "Daily 3 PM EST": {"main": [[{"node": "Build Features", "type": "main"}]]},
+    "Build Features": {"main": [[{"node": "Predict Gainers", "type": "main"}]]},
+    "Predict Gainers": {"main": [[{"node": "Log to Vault", "type": "main"}]]}
+  }
+}
