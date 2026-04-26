@@ -31,3 +31,14 @@ Thumbs.db
 *.h5
 *.pt
 02_Projects/top_gainers/models/
+
+# Skill metadata
+.clawhub/
+_meta.json
+
+# OpenClaw config
+.openclaw/
+
+# Obsidian workspace (user-specific)
+.obsidian/workspace.json
+.obsidian/graph.json

@@ -1,0 +1,6 @@
+{
+  "promptDelete": false,
+  "enabledPlugins": [
+    "obsidian-local-rest-api"
+  ]
+}

@@ -3,8 +3,6 @@ tags: [meta, index, reference]
 ---
 # Memory Index 🦞
 
-_Keyword → File path mapping. Updated automatically._
-
 _Last updated: 2026-04-26_
 
 ## Identity & Rules
@@ -12,8 +10,8 @@ _Last updated: 2026-04-26_
 | Keyword | File |
 |---------|------|
 | identity, name (OpenClaw), creature (trading AI) | IDENTITY.md |
-| soul, personality, vibe (sharp/analytical/conversational) | SOUL.md |
-| user info, Shawn, timezone (America/New_York) | USER.md |
+| soul, personality, vibe | SOUL.md |
+| user info, Shawn, timezone | USER.md |
 | protocols, behavior rules | AGENTS.md |
 | tools, actions | TOOLS.md |
 | heartbeat, status log | HEARTBEAT.md |
@@ -22,9 +20,24 @@ _Last updated: 2026-04-26_
 
 | Keyword | File |
 |---------|------|
-| trading journal, trade log | 02_Projects/trading_journal.md |
-| mistakes registry, lessons learned | 05_Meta/mistakes_registry.md |
-| strategies, trading systems | 03_Knowledge/strategies/ |
+| trading journal | 02_Projects/trading_journal.md |
+| mistakes registry | 05_Meta/mistakes_registry.md |
+
+## Top Gainers Prediction System
+
+| Keyword | File |
+|---------|------|
+| project root & README | 02_Projects/Top_Gainers_Predictor/ |
+| sentiment (FinTwitBERT) | 02_Projects/Top_Gainers_Predictor/scripts/sentiment_pipeline.py |
+| timeseries (TimesFM + indicators) | 02_Projects/Top_Gainers_Predictor/scripts/timeseries_pipeline.py |
+| kronos prediction (Kronos-base) | 02_Projects/Top_Gainers_Predictor/scripts/kronos_pipeline.py |
+| master orchestrator | 02_Projects/Top_Gainers_Predictor/scripts/predict_gainers.py |
+| n8n daily workflow | 02_Projects/Top_Gainers_Predictor/n8n_daily_workflow.json |
+| prediction log (CSV) | 05_Meta/prediction_log.csv |
+| prediction log (MD) | 05_Meta/prediction_log.md |
+| Kronos model overview | 03_Knowledge/Models/Kronos_Overview.md |
+| FinTwitBERT model overview | 03_Knowledge/Models/FinTwitBERT_Overview.md |
+| TimesFM model overview | 03_Knowledge/Models/TimesFM_Overview.md |
 
 ## Infrastructure
 
@@ -42,6 +55,20 @@ _Last updated: 2026-04-26_
 |---------|------|
 | embeddings builder (Node) | 02_Projects/scripts/build_embeddings.mjs |
 | embeddings builder (Python) | 02_Projects/scripts/build_embeddings.py |
+| Obsidian API helper | 02_Projects/scripts/obsidian_api.mjs |
+| env loader | 02_Projects/scripts/env_loader.py |
+
+## Self-Improving & Memory
+
+| Keyword | File |
+|---------|------|
+| hot memory (preferences, patterns) | 05_Meta/self_improving_memory.md |
+| corrections log | 05_Meta/corrections.md |
+| reflections log | 05_Meta/reflections.md |
+| heartbeat state | 05_Meta/heartbeat_state.md |
+| SESSION-STATE (WAL protocol) | SESSION-STATE.md |
+| curated long-term memory | MEMORY.md |
+| daily logs | memory/YYYY-MM-DD.md |
 
 ## Templates
 
@@ -50,28 +77,3 @@ _Last updated: 2026-04-26_
 | concept note template | 04_Templates/Concept Note.md |
 | daily note template | 04_Templates/Daily Note.md |
 | interaction log template | 04_Templates/Interaction Log.md |
-
-## Self-Improving
-
-| Keyword | File |
-|---------|------|
-| self-improving skill, corrections, reflections | skills/self-improving/ |
-| learning signals, tiered memory | 05_Meta/reflections.md |
-| correction log | 05_Meta/corrections.md |
-
-## Elite Longterm Memory
-
-| Keyword | File |
-|---------|------|
-| SESSION-STATE, WAL protocol, hot RAM | SESSION-STATE.md |
-| curated long-term memory | MEMORY.md |
-| daily logs | memory/YYYY-MM-DD.md |
-| elite memory skill | skills/elite-longterm-memory/ |
-
-## Browser Automation
-
-| Keyword | File |
-|---------|------|
-| browser setup, Playwright, Chromium | SESSION-STATE.md |
-| browser automation skill | (bundled with OpenClaw) |
-| Chrome CDP port 18800 | .openclaw config |

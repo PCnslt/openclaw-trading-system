@@ -1,0 +1,64 @@
+{
+  "name": "Daily Gainers Prediction (HF Models)",
+  "nodes": [
+    {
+      "id": "cron-trigger",
+      "name": "Daily 4 PM EST",
+      "type": "n8n-nodes-base.cron",
+      "position": [200, 300],
+      "parameters": {
+        "triggerTimes": {
+          "item": [{"mode": "everyDay", "hour": 16, "minute": 0}]
+        }
+      }
+    },
+    {
+      "id": "run-prediction",
+      "name": "Run Predict Gainers",
+      "type": "n8n-nodes-base.executeCommand",
+      "position": [500, 300],
+      "parameters": {
+        "command": "C:\\Users\\pcnsl\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "commandArguments": "02_Projects\\Top_Gainers_Predictor\\scripts\\predict_gainers.py --universe",
+        "workingDirectory": "C:\\Users\\pcnsl\\OneDrive\\Documents\\openclaw",
+        "timeout": 180
+      }
+    },
+    {
+      "id": "parse-output",
+      "name": "Parse Prediction Output",
+      "type": "n8n-nodes-base.code",
+      "position": [750, 300],
+      "parameters": {
+        "jsCode": "const output = $input.item.json;\nconst match = output.stdout ? output.stdout.match(/JSON_OUTPUT:({[\\s\\S]*})/m) : null;\nif (match) {\n  const data = JSON.parse(match[1]);\n  return data.top_10.map(item => ({\n    json: {\n      rank: item.rank,\n      ticker: item.ticker,\n      predicted_return: item.predicted_return,\n      target_date: data.target_date,\n      base_date: data.base_date\n    }\n  }));\n}\nreturn [{json: {error: 'Could not parse prediction output'}}];"
+      }
+    },
+    {
+      "id": "log-to-file",
+      "name": "Log Results",
+      "type": "n8n-nodes-base.writeFile",
+      "position": [1000, 300],
+      "parameters": {
+        "fileName": "05_Meta\\prediction_n8n_{{ $now.format('YYYY-MM-DD') }}.json",
+        "content": "={{ $json }}"
+      }
+    },
+    {
+      "id": "check-accuracy",
+      "name": "Weekly Accuracy Check",
+      "type": "n8n-nodes-base.cron",
+      "position": [200, 600],
+      "parameters": {
+        "triggerTimes": {
+          "item": [{"mode": "everyWeek", "weekday": 1, "hour": 10, "minute": 0}]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 4 PM EST": {"main": [[{"node": "Run Predict Gainers", "type": "main"}]]},
+    "Run Predict Gainers": {"main": [[{"node": "Parse Prediction Output", "type": "main"}]]},
+    "Parse Prediction Output": {"main": [[{"node": "Log Results", "type": "main"}]]},
+    "Weekly Accuracy Check": {"main": [[]]}
+  }
+}

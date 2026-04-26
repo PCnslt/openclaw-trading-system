@@ -6,41 +6,35 @@ tags: [memory, hot-ram, wal-protocol, session]
 **WAL Protocol:** Write state BEFORE responding, not after.
 
 ## Current Task
-Top Gainers Prediction System — Installing n8n (npm install running)
+Dual-API Top 10 Gainers Prediction System — Setup Complete ✅
 
-## Full Setup Status
+## Dual-API Policy (Enforced)
+- **DeepSeek** → conversation, reasoning, vault management (THIS session)
+- **HuggingFace FREE models** → ALL prediction work (forbidden to use DeepSeek for predictions)
 
-### ✅ Vault Project Structure
-- 02_Projects/top_gainers/ (README, log, n8n template, models/)
-- 02_Projects/post_mortems/
-- 03_Knowledge/gainers_drivers/index.md
-- 05_Meta/predictor_retraining_log.md
+## Pipeline: HF Free Models Only
+```
+Step 1: StephanAkkerman/FinTwitBERT → Sentiment Scores
+Step 2: google/timesfm-1.0-200m + RSI/MACD/BB → Momentum Scores
+Step 3: NeoQuasar/Kronos-base → Return % Forecasts
+Step 4: Ranking → Top 10 → Logged to vault
+```
 
-### ✅ Python Environment
-- Python 3.12.10 at C:\Users\pcnsl\AppData\Local\Programs\Python\Python312\
-- yfinance 1.3.0, pandas 3.0.2, scikit-learn 1.8.0, xgboost 3.2.0
-- numpy, scipy, beautifulsoup4, python-dotenv, requests
+## Setup Status
+- [x] Project folder: 02_Projects/Top_Gainers_Predictor/
+- [x] Scripts: sentiment_pipeline.py, timeseries_pipeline.py, kronos_pipeline.py, predict_gainers.py
+- [x] Model KB: 03_Knowledge/Models/ (Kronos, FinTwitBERT, TimesFM overviews)
+- [x] n8n workflow template: n8n_daily_workflow.json
+- [x] Prediction logging: 05_Meta/prediction_log.md + .csv
+- [x] GitHub auto-sync: Startup + every 4 hours via Task Scheduler
+- [x] GitHub repo: PCnslt/openclaw-trading-system (51 files pushed)
+- [x] Robinhood accessible via browser
+- [x] Memory index updated
 
-### ✅ Core Scripts
-- fetch_universe.py — Universe download + Yahoo Finance gainers scrape
-- feature_pipeline.py — RSI, MACD, Bollinger, volume, momentum, gap features
-- predict_gainers.py — XGBoost Ranker, prediction, vault logging
-- env_loader.py — Secure key loader from api_keys.md (42 keys)
-
-### ✅ API Keys Restored
-- All 42 keys from original vault migration in api_keys.md
-- .env file generated at vault root
-
-### ⏳ Installing n8n
-- npm install n8n running in vault root (background)
-- workflow template ready at 02_Projects/top_gainers/n8n_daily_pipeline.json
-- Once done: import workflow, set cron, connect Python pipeline
-
-### ✅ Infrastructure Ready
-- Obsidian REST API (port 27123)
-- Chrome browser control (Playwright active)
-- Self-improving + elite-longterm-memory skills integrated
-- DeepSeek model routing: flash default, fallbacks fixed, active switching rules
+## Pending
+- [ ] Install n8n (npm install still downloading)
+- [ ] First live prediction run (test the HF API endpoints)
+- [ ] Build evaluation dashboard
 
 ---
-*Last updated: 2026-04-26T23:07:00.000Z*
+*Last updated: 2026-04-26T23:50:00.000Z*
