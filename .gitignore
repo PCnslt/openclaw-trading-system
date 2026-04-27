@@ -48,3 +48,6 @@ _nm_del*
 
 # HF pipeline cache
 02_Projects/Top_Gainers_Predictor/.cache_*
+
+# Large FinanceDatabase CSVs (>1MB each, not committed)
+03_Knowledge/FinanceDatabase/*.csv

@@ -48,6 +48,7 @@ _Last updated: 2026-04-26_
 | api keys, credentials | 03_Knowledge/api_keys.md |
 | model routing, DeepSeek pricing | 03_Knowledge/model_routing.md |
 | cost ledger, API costs | 05_Meta/api_costs.md |
+| global symbol universe (350k+) | 03_Knowledge/FinanceDatabase/ |
 
 ## Scripts & Automation
 
