@@ -11,8 +11,9 @@ tags: [core, heartbeat, status]
 
 ## Entries
 
-- `[2026-04-26 19:51 EDT]` — **✅ All systems resumed. Vault organised and pushed to GitHub. Dual-API active. Top-10 gainers pipeline built with HF models. Commit 9d9015f. n8n install fixing (corrupt node_modules). Ready, Shawn.** 🦞
-- `[2026-04-26 19:44 EDT]` — Dual-API System deployed. DeepSeek for conversation, HF free models for predictions. Full pipeline scripts written (FinTwitBERT → TimesFM → Kronos). GitHub repo pushed. n8n workflow template saved.
-- `[2026-04-26 14:55 PDT]` — Full vault inventory completed. Files tagged with frontmatter. Self-improving skill integrated. Elite-longterm-memory inspected.
-- `[2026-04-26 14:40 PDT]` — Bootstrap complete. All systems installed and verified.
+- `[2026-04-26 20:15 EDT]` — Dashboard running on 7000, startup script updated to auto-start dashboard + gateway + git sync. n8n still installing (~300MB package keeps timing out on exec). Ready.
+- `[2026-04-26 19:58 EDT]` — Dashboard running on 7000. n8n v2.17.0 installing in background.
+- `[2026-04-26 19:51 EDT]` — All systems resumed. Vault pushed to GitHub (commit 9d9015f). Dual-API active.
+- `[2026-04-26 14:55 PDT]` — Full vault inventory completed.
+- `[2026-04-26 14:40 PDT]` — Bootstrap complete.
 - `[2026-04-26 14:35 PDT]` — Agent started. Obsidian memory online.
