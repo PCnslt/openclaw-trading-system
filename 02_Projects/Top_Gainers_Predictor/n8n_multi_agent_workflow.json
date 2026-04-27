@@ -1,28 +1,364 @@
-[{"id":"vqbfhAVPKNJ9Aar5","name":"Top Gainers Prediction - Multi-Agent Pipeline","active":true,"nodes":[
-{"id":"0-cron","name":"Scheduled Trigger","type":"n8n-nodes-base.cron","position":[200,300],"parameters":{"triggerTimes":{"item":[{"mode":"everyDay","hour":16,"minute":0}]}},"typeVersion":1},
-{"id":"0-webhook","name":"Webhook Trigger","type":"n8n-nodes-base.webhook","position":[200,600],"parameters":{"path":"run-pipeline","responseMode":"responseNode","options":{}},"typeVersion":1},
-{"id":"0-merge","name":"Merge Triggers","type":"n8n-nodes-base.merge","position":[400,400],"parameters":{"mode":"append"},"typeVersion":2},
-
-{"id":"1-load-universe","name":"AGENT 1: Load Universe","type":"n8n-nodes-base.httpRequest","position":[650,200],"parameters":{"url":"http://127.0.0.1:18888/agent/universe","method":"GET","authentication":"none","options":{"timeout":60000}},"typeVersion":4.4},
-{"id":"2-fetch-prices","name":"AGENT 2: Fetch Prices","type":"n8n-nodes-base.httpRequest","position":[650,350],"parameters":{"url":"http://127.0.0.1:18888/agent/prices","method":"POST","authentication":"none","sendBody":true,"bodyParameters":{"parameters":[{"name":"tickers","value":"={{ $items('AGENT 1: Load Universe').first().json.tickers.slice(0,100).join(',') }}"}]},"options":{"timeout":120000}},"typeVersion":4.4},
-
-{"id":"3-sentiment","name":"AGENT 3: Sentiment Analysis","type":"n8n-nodes-base.httpRequest","position":[650,500],"parameters":{"url":"http://127.0.0.1:18888/agent/sentiment","method":"POST","authentication":"none","sendBody":true,"bodyParameters":{"parameters":[{"name":"tickers","value":"={{ $items('AGENT 2: Fetch Prices').first().json.tickers }}"}]},"options":{"timeout":180000}},"typeVersion":4.4},
-{"id":"4-technicals","name":"AGENT 4: Technical Analysis","type":"n8n-nodes-base.httpRequest","position":[650,650],"parameters":{"url":"http://127.0.0.1:18888/agent/technicals","method":"POST","authentication":"none","sendBody":true,"bodyParameters":{"parameters":[{"name":"tickers","value":"={{ $items('AGENT 2: Fetch Prices').first().json.tickers }}"}]},"options":{"timeout":180000}},"typeVersion":4.4},
-
-{"id":"5-merge-features","name":"AGENT 5: Feature Merger","type":"n8n-nodes-base.merge","position":[900,400],"parameters":{"mode":"combine","combinationMode":"mergeByField","mergeByField":"ticker"},"typeVersion":2},
-{"id":"6-rank","name":"AGENT 6: Rank & Predict","type":"n8n-nodes-base.code","position":[1150,400],"parameters":{"jsCode":"const items = $input.all();\n// Combine sentiment + technicals into weighted score\nitems.forEach(item => {\n  const sentiment = item.json.sentiment_score || 0;\n  const momentum = item.json.momentum_score || 0;\n  const rsi = item.json.rsi || 50;\n  const volumeRatio = item.json.volume_ratio || 1;\n  const ret5d = item.json.return_5d || 0;\n  \n  // Multi-factor scoring\n  const rsiComponent = (rsi - 50) / 50;\n  const retComponent = Math.max(-1, Math.min(1, ret5d * 10));\n  const volComponent = Math.max(-1, Math.min(1, (volumeRatio - 1) * 2));\n  const sentComponent = sentiment * 0.25;\n  \n  // Enhanced prediction score with all factors\n  item.json.prediction_score = rsiComponent * 0.20 + retComponent * 0.30 + volComponent * 0.15 + sentComponent * 0.35;\n  item.json.predicted_return = item.json.prediction_score * 2.0;\n});\n// Sort by prediction_score descending, take top 10\nitems.sort((a, b) => b.json.prediction_score - a.json.prediction_score);\nreturn items.slice(0, 10).map((item, i) => ({\n  json: {\n    rank: i + 1,\n    ticker: item.json.ticker,\n    predicted_return: Math.round(item.json.predicted_return * 10000) / 10000,\n    confidence: Math.round(item.json.prediction_score * 10000) / 10000,\n    sentiment: item.json.sentiment_score,\n    momentum: item.json.momentum_score,\n    rsi: item.json.rsi,\n    volume_ratio: item.json.volume_ratio,\n    return_5d: item.json.return_5d,\n    price: item.json.price,\n    timestamp: new Date().toISOString()\n  }\n}));"},"typeVersion":2},
-
-{"id":"7-log","name":"AGENT 7: Log to Vault","type":"n8n-nodes-base.writeFile","position":[1400,250],"parameters":{"fileName":"02_Projects/Top_Gainers_Predictor/predictions_{{ $now.format('YYYY-MM-DD_HHmm') }}.json","content":"={{ $json }}"},"typeVersion":1},
-{"id":"8-summary","name":"AGENT 8: Summary Report","type":"n8n-nodes-base.code","position":[1400,400],"parameters":{"jsCode":"const items = $input.all();\nconst top3 = items.slice(0,3);\nconst summary = 'TOP 10 GAINERS PREDICTION' + '\\n' + \n  '='.repeat(40) + '\\n' +\n  top3.map((i,idx) => `${idx+1}. ${i.json.ticker} | Return: ${i.json.predicted_return}% | Conf: ${i.json.confidence} | RSI: ${i.json.rsi}`).join('\\n') + '\\n' +\n  '='.repeat(40) + '\\n' +\n  `Total scored: ${items.length} stocks`;\nconsole.log(summary);\nreturn items;"},"typeVersion":2},
-{"id":"9-notify","name":"AGENT 9: Notify","type":"n8n-nodes-base.code","position":[1400,550],"parameters":{"jsCode":"const items = $input.all();\nconst top3 = items.slice(0,3);\nconst msg = top3.map((i,idx) => `${idx+1}. ${i.json.ticker}: ${i.json.predicted_return}%`).join(' | ');\nconsole.log('TOP 3:', msg);\n// Return all items for downstream nodes\nreturn items;"},"typeVersion":2}
-],"connections":{
-"Scheduled Trigger":{"main":[[{"node":"Merge Triggers","type":"main","index":0}]]},
-"Webhook Trigger":{"main":[[{"node":"Merge Triggers","type":"main","index":0}]]},
-"Merge Triggers":{"main":[[{"node":"AGENT 1: Load Universe","type":"main","index":0}]]},
-"AGENT 1: Load Universe":{"main":[[{"node":"AGENT 2: Fetch Prices","type":"main","index":0}]]},
-"AGENT 2: Fetch Prices":{"main":[[{"node":"AGENT 3: Sentiment Analysis","type":"main","index":0},{"node":"AGENT 4: Technical Analysis","type":"main","index":0}]]},
-"AGENT 3: Sentiment Analysis":{"main":[[{"node":"AGENT 5: Feature Merger","type":"main","index":0}]]},
-"AGENT 4: Technical Analysis":{"main":[[{"node":"AGENT 5: Feature Merger","type":"main","index":1}]]},
-"AGENT 5: Feature Merger":{"main":[[{"node":"AGENT 6: Rank & Predict","type":"main","index":0}]]},
-"AGENT 6: Rank & Predict":{"main":[[{"node":"AGENT 7: Log to Vault","type":"main","index":0},{"node":"AGENT 8: Summary Report","type":"main","index":0},{"node":"AGENT 9: Notify","type":"main","index":0}]]}
-},"settings":{"executionOrder":"v1"}}]
+[
+  {
+    "name": "Top Gainers Prediction - Multi-Agent Pipeline",
+    "nodes": [
+      {
+        "id": "555635e4-ad03-4dac-9c0c-73325f25c6b8",
+        "name": "Manual Trigger",
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          0,
+          0
+        ],
+        "parameters": {}
+      },
+      {
+        "id": "f74c2f03-81c8-413a-8821-ee5625019e43",
+        "name": "Schedule 4PM",
+        "type": "n8n-nodes-base.cron",
+        "typeVersion": 1,
+        "position": [
+          0,
+          250
+        ],
+        "parameters": {
+          "triggerTimes": {
+            "item": [
+              {
+                "mode": "everyDay",
+                "hour": 16,
+                "minute": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "78a2853e-901f-4b1a-b1ed-7d60563ab28b",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          0,
+          500
+        ],
+        "parameters": {
+          "path": "run-pipeline",
+          "responseMode": "responseNode",
+          "options": {}
+        }
+      },
+      {
+        "id": "15ea8a02-9420-451f-ab8b-c90537965319",
+        "name": "Merge Triggers",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 2,
+        "position": [
+          250,
+          250
+        ],
+        "parameters": {
+          "mode": "append"
+        }
+      },
+      {
+        "id": "850ed03a-264a-45a1-96b6-75f9f1684341",
+        "name": "Agent 1: Universe",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          550,
+          50
+        ],
+        "parameters": {
+          "url": "http://127.0.0.1:18888/agent/universe",
+          "method": "GET",
+          "authentication": "none",
+          "options": {
+            "timeout": 60000
+          }
+        }
+      },
+      {
+        "id": "75f7a9e2-228c-408b-82c6-bed7d0652ee7",
+        "name": "Agent 2: Prices",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          550,
+          200
+        ],
+        "parameters": {
+          "url": "http://127.0.0.1:18888/agent/prices",
+          "method": "POST",
+          "authentication": "none",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "tickers",
+                "value": ""
+              }
+            ]
+          },
+          "options": {
+            "timeout": 120000
+          }
+        }
+      },
+      {
+        "id": "3a3be8d3-cfaa-4b6a-8bcb-109f34a0af9c",
+        "name": "Agent 3: Sentiment",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          550,
+          350
+        ],
+        "parameters": {
+          "url": "http://127.0.0.1:18888/agent/sentiment",
+          "method": "POST",
+          "authentication": "none",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "tickers",
+                "value": ""
+              }
+            ]
+          },
+          "options": {
+            "timeout": 180000
+          }
+        }
+      },
+      {
+        "id": "739738e8-0d16-4a32-b01c-25aa4746ef6e",
+        "name": "Agent 4: Technicals",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          550,
+          500
+        ],
+        "parameters": {
+          "url": "http://127.0.0.1:18888/agent/technicals",
+          "method": "POST",
+          "authentication": "none",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "tickers",
+                "value": ""
+              }
+            ]
+          },
+          "options": {
+            "timeout": 180000
+          }
+        }
+      },
+      {
+        "id": "27eec98f-5831-48d6-b88d-c982c948259e",
+        "name": "Agent 5: Merge Features",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 2,
+        "position": [
+          800,
+          350
+        ],
+        "parameters": {
+          "mode": "combine",
+          "combinationMode": "mergeByField",
+          "mergeByField": "ticker"
+        }
+      },
+      {
+        "id": "46f9f724-52be-4dbd-9fde-59dd95728edf",
+        "name": "Agent 6: Rank",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1050,
+          350
+        ],
+        "parameters": {
+          "jsCode": "const items = $input.all();\nitems.forEach(item => {\n  const s = item.json.sentiment_score || 0;\n  const m = item.json.momentum_score || 0;\n  const r = item.json.rsi || 50;\n  const v = item.json.volume_ratio || 1;\n  const ret = item.json.return_5d || 0;\n  const rsiC = (r - 50) / 50;\n  const retC = Math.max(-1, Math.min(1, ret * 10));\n  const volC = Math.max(-1, Math.min(1, (v - 1) * 2));\n  item.json.score = rsiC * 0.20 + retC * 0.30 + volC * 0.15 + s * 0.35;\n});\nitems.sort((a, b) => b.json.score - a.json.score);\nreturn items.slice(0, 10).map((x, i) => ({\n  json: {\n    rank: i + 1,\n    ticker: x.json.ticker,\n    confidence: Math.round(x.json.score * 10000) / 10000,\n    rsi: x.json.rsi,\n    volume: x.json.volume_ratio,\n    return_pct: Math.round(x.json.score * 200) / 100,\n    timestamp: new Date().toISOString()\n  }\n}));"
+        }
+      },
+      {
+        "id": "83409889-75e5-49b9-aa0c-2180cc75079e",
+        "name": "Agent 7: Log",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          1300,
+          200
+        ],
+        "parameters": {}
+      },
+      {
+        "id": "30859137-c01a-4035-a0a4-d266fc4c3c6f",
+        "name": "Agent 8: Summary",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1300,
+          350
+        ],
+        "parameters": {
+          "jsCode": "const items = $input.all(); const top3 = items.slice(0,3); const msg = top3.map((x,i) => (i+1) + '. ' + x.json.ticker + ': ' + x.json.confidence).join(String.fromCharCode(10)); console.log(msg); return items;"
+        }
+      },
+      {
+        "id": "4943fe8e-7da7-4df2-b92a-8880129ec9d9",
+        "name": "Agent 9: Complete",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          1300,
+          500
+        ],
+        "parameters": {}
+      }
+    ],
+    "connections": {
+      "Schedule 4PM": {
+        "main": [
+          [
+            {
+              "node": "Merge Triggers",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Manual Trigger": {
+        "main": [
+          [
+            {
+              "node": "Merge Triggers",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Merge Triggers",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge Triggers": {
+        "main": [
+          [
+            {
+              "node": "Agent 1: Universe",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 1: Universe": {
+        "main": [
+          [
+            {
+              "node": "Agent 2: Prices",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 2: Prices": {
+        "main": [
+          [
+            {
+              "node": "Agent 3: Sentiment",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Agent 4: Technicals",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 3: Sentiment": {
+        "main": [
+          [
+            {
+              "node": "Agent 5: Merge Features",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 4: Technicals": {
+        "main": [
+          [
+            {
+              "node": "Agent 5: Merge Features",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Agent 5: Merge Features": {
+        "main": [
+          [
+            {
+              "node": "Agent 6: Rank",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 6: Rank": {
+        "main": [
+          [
+            {
+              "node": "Agent 7: Log",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Agent 8: Summary",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Agent 9: Complete",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "active": true,
+    "pinData": {},
+    "versionId": "b887452b-280a-460c-ac42-1feddc01e49e",
+    "id": "vqbfhAVPKNJ9Aar5",
+    "tags": []
+  }
+]
