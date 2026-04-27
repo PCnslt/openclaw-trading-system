@@ -126,11 +126,11 @@ def main():
         tickers = ["AAPL", "MSFT", "TSLA", "AMZN", "NVDA", "GOOGL", "META", "PLTR", "AMD", "AVGO"]
     
     print(f"\nUniverse: {len(tickers)} tickers")
-    print(f"\n{'─' * 60}")
+    print(f"\n{'-' * 60}")
     
     # Step 1: Sentiment
     print(f"\n[Step 1/3] Sentiment Analysis (FinTwitBERT)")
-    print(f"{'─' * 40}")
+    print(f"{'-' * 40}")
     sentiment_output = run_module(SCRIPTS_DIR / "sentiment_pipeline.py", tickers)
     sentiment_scores = sentiment_output.get("sentiment_scores", {})
     
@@ -140,7 +140,7 @@ def main():
     
     # Step 2: Time Series
     print(f"\n[Step 2/3] Time Series & Technical (TimesFM + Indicators)")
-    print(f"{'─' * 40}")
+    print(f"{'-' * 40}")
     momentum_output = run_module(SCRIPTS_DIR / "timeseries_pipeline.py", tickers)
     momentum_scores = momentum_output.get("momentum_scores", {})
     
@@ -149,7 +149,7 @@ def main():
     
     # Step 3: Final Prediction (Kronos)
     print(f"\n[Step 3/3] Final Market Movement Prediction (Kronos-base)")
-    print(f"{'─' * 40}")
+    print(f"{'-' * 40}")
     kronos_args = [
         "--sentiment", str(SCRIPTS_DIR / ".." / ".cache_sentiment.json"),
         "--momentum", str(SCRIPTS_DIR / ".." / ".cache_momentum.json")
