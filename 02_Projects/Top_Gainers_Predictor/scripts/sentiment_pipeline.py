@@ -23,7 +23,7 @@ try:
 except:
     HF_TOKEN = os.environ.get("HF_TOKEN", "")
 HF_BASE = "https://router.huggingface.co/hf-inference/models"
-HF_MODEL = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+HF_MODEL = "ahmedrachid/FinancialBERT-Sentiment-Analysis"  # Best financial sentiment model
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}", "Content-Type": "application/json"}
 
 def get_sentiment_score(text):
