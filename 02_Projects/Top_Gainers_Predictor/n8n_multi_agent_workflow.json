@@ -3,7 +3,7 @@
     "name": "Top Gainers Prediction - Multi-Agent Pipeline",
     "nodes": [
       {
-        "id": "555635e4-ad03-4dac-9c0c-73325f25c6b8",
+        "id": "50d859ec-e1d5-4981-bc03-c1cf50683b5a",
         "name": "Manual Trigger",
         "type": "n8n-nodes-base.manualTrigger",
         "typeVersion": 1,
@@ -14,7 +14,7 @@
         "parameters": {}
       },
       {
-        "id": "f74c2f03-81c8-413a-8821-ee5625019e43",
+        "id": "e42b289a-e357-4170-a23b-a0ef55a4af1a",
         "name": "Schedule 4PM",
         "type": "n8n-nodes-base.cron",
         "typeVersion": 1,
@@ -35,7 +35,7 @@
         }
       },
       {
-        "id": "78a2853e-901f-4b1a-b1ed-7d60563ab28b",
+        "id": "b752e9a8-beb9-4a84-8bfa-f6006f325cdf",
         "name": "Webhook",
         "type": "n8n-nodes-base.webhook",
         "typeVersion": 1,
@@ -50,7 +50,7 @@
         }
       },
       {
-        "id": "15ea8a02-9420-451f-ab8b-c90537965319",
+        "id": "176973de-9a5a-447c-87ad-61919c426249",
         "name": "Merge Triggers",
         "type": "n8n-nodes-base.merge",
         "typeVersion": 2,
@@ -63,7 +63,7 @@
         }
       },
       {
-        "id": "850ed03a-264a-45a1-96b6-75f9f1684341",
+        "id": "a68b72ec-1f96-4c65-9bbf-c26cda4c816e",
         "name": "Agent 1: Universe",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.4,
@@ -81,7 +81,7 @@
         }
       },
       {
-        "id": "75f7a9e2-228c-408b-82c6-bed7d0652ee7",
+        "id": "e964d535-ad62-4eb4-8c5e-0d7b3d0e50db",
         "name": "Agent 2: Prices",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.4,
@@ -108,7 +108,7 @@
         }
       },
       {
-        "id": "3a3be8d3-cfaa-4b6a-8bcb-109f34a0af9c",
+        "id": "ce6438f2-284f-4d12-92b9-20fbc73ab1ab",
         "name": "Agent 3: Sentiment",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.4,
@@ -135,7 +135,7 @@
         }
       },
       {
-        "id": "739738e8-0d16-4a32-b01c-25aa4746ef6e",
+        "id": "b4b3ab4b-db76-4a9e-ba95-4f425e95fd81",
         "name": "Agent 4: Technicals",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.4,
@@ -162,7 +162,7 @@
         }
       },
       {
-        "id": "27eec98f-5831-48d6-b88d-c982c948259e",
+        "id": "565d0730-9998-4932-b40c-6163f987b736",
         "name": "Agent 5: Merge Features",
         "type": "n8n-nodes-base.merge",
         "typeVersion": 2,
@@ -177,7 +177,7 @@
         }
       },
       {
-        "id": "46f9f724-52be-4dbd-9fde-59dd95728edf",
+        "id": "97068a73-4806-47cd-bf7b-3db0b355e4c5",
         "name": "Agent 6: Rank",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -190,7 +190,7 @@
         }
       },
       {
-        "id": "83409889-75e5-49b9-aa0c-2180cc75079e",
+        "id": "b80ceedd-dec6-4a10-b6d4-a0785bb5134f",
         "name": "Agent 7: Log",
         "type": "n8n-nodes-base.noOp",
         "typeVersion": 1,
@@ -201,7 +201,7 @@
         "parameters": {}
       },
       {
-        "id": "30859137-c01a-4035-a0a4-d266fc4c3c6f",
+        "id": "2128eb1b-96f8-4029-9937-241d6687ac7e",
         "name": "Agent 8: Summary",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -210,11 +210,11 @@
           350
         ],
         "parameters": {
-          "jsCode": "const items = $input.all(); const top3 = items.slice(0,3); const msg = top3.map((x,i) => (i+1) + '. ' + x.json.ticker + ': ' + x.json.confidence).join(String.fromCharCode(10)); console.log(msg); return items;"
+          "jsCode": "const items = $input.all();\nconst top3 = items.slice(0, 3);\nconst msg = top3.map((x, i) => (i + 1) + '. ' + x.json.ticker + ': ' + x.json.confidence).join('\\n');\nconsole.log(msg);\nreturn items;"
         }
       },
       {
-        "id": "4943fe8e-7da7-4df2-b92a-8880129ec9d9",
+        "id": "cf93d262-9014-4085-a7cb-04b35ca16dd3",
         "name": "Agent 9: Complete",
         "type": "n8n-nodes-base.noOp",
         "typeVersion": 1,
@@ -355,10 +355,10 @@
     "settings": {
       "executionOrder": "v1"
     },
+    "id": "fb97d647-cfb9-4",
     "active": true,
     "pinData": {},
-    "versionId": "b887452b-280a-460c-ac42-1feddc01e49e",
-    "id": "vqbfhAVPKNJ9Aar5",
+    "versionId": "6dc8fae0-e55e-41e2-aadc-329af3a4db25",
     "tags": []
   }
 ]
