@@ -1,26 +1,26 @@
 [
   {
-    "name": "Top Gainers Prediction - Multi-Agent Pipeline",
+    "name": "Top Gainers Prediction - Enhanced Multi-Agent Pipeline",
     "nodes": [
       {
-        "id": "50d859ec-e1d5-4981-bc03-c1cf50683b5a",
+        "id": "90cb38d1-90d3-475b-8ea6-ce8cddada545",
         "name": "Manual Trigger",
         "type": "n8n-nodes-base.manualTrigger",
         "typeVersion": 1,
         "position": [
-          0,
+          -500,
           0
         ],
         "parameters": {}
       },
       {
-        "id": "e42b289a-e357-4170-a23b-a0ef55a4af1a",
+        "id": "aacfa9b3-8a35-46bf-a0c7-334ad2021699",
         "name": "Schedule 4PM",
         "type": "n8n-nodes-base.cron",
         "typeVersion": 1,
         "position": [
-          0,
-          250
+          -500,
+          200
         ],
         "parameters": {
           "triggerTimes": {
@@ -35,27 +35,114 @@
         }
       },
       {
-        "id": "b752e9a8-beb9-4a84-8bfa-f6006f325cdf",
+        "id": "cddde34f-b251-4c01-a051-16c51adea892",
         "name": "Webhook",
         "type": "n8n-nodes-base.webhook",
         "typeVersion": 1,
         "position": [
-          0,
-          500
+          -500,
+          400
         ],
         "parameters": {
-          "path": "run-pipeline",
+          "path": "enhanced-pipeline",
           "responseMode": "responseNode",
           "options": {}
         }
       },
       {
-        "id": "176973de-9a5a-447c-87ad-61919c426249",
+        "id": "a0c9843c-16f9-46e7-8bfb-ecd5ed97c2ae",
+        "name": "CONFIG: All Parameters",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 2,
+        "position": [
+          -250,
+          -100
+        ],
+        "parameters": {
+          "values": {
+            "string": [
+              {
+                "name": "universe_source",
+                "value": "http://127.0.0.1:18888/agent/universe"
+              },
+              {
+                "name": "universe_default",
+                "value": "SP500"
+              },
+              {
+                "name": "prices_url",
+                "value": "http://127.0.0.1:18888/agent/prices"
+              },
+              {
+                "name": "sentiment_url",
+                "value": "http://127.0.0.1:18888/agent/sentiment"
+              },
+              {
+                "name": "technicals_url",
+                "value": "http://127.0.0.1:18888/agent/technicals"
+              },
+              {
+                "name": "top_n",
+                "value": "10"
+              },
+              {
+                "name": "rag_vector_store",
+                "value": "local-faiss"
+              },
+              {
+                "name": "dynamodb_table",
+                "value": "stock_historical_data"
+              },
+              {
+                "name": "dynamodb_region",
+                "value": "us-east-1"
+              },
+              {
+                "name": "alert_webhook",
+                "value": ""
+              },
+              {
+                "name": "alert_channel",
+                "value": "console"
+              }
+            ],
+            "number": [
+              {
+                "name": "weight_sentiment",
+                "value": 0.35
+              },
+              {
+                "name": "weight_return",
+                "value": 0.3
+              },
+              {
+                "name": "weight_rsi",
+                "value": 0.2
+              },
+              {
+                "name": "weight_volume",
+                "value": 0.15
+              },
+              {
+                "name": "max_stocks",
+                "value": 300
+              },
+              {
+                "name": "batch_size",
+                "value": 50
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "de403b17-cb36-41fb-967e-b12200e436e9",
         "name": "Merge Triggers",
         "type": "n8n-nodes-base.merge",
         "typeVersion": 2,
         "position": [
-          250,
+          -250,
           250
         ],
         "parameters": {
@@ -63,16 +150,29 @@
         }
       },
       {
-        "id": "a68b72ec-1f96-4c65-9bbf-c26cda4c816e",
-        "name": "Agent 1: Universe",
+        "id": "4e069943-3858-44bd-82b4-ef322c8f5360",
+        "name": "Parse Webhook Params",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          0,
+          0
+        ],
+        "parameters": {
+          "jsCode": "// Parse webhook params or use defaults\nconst input = $input.first().json;\nconst webhookUniverse = input.body ? (input.body.universe || input.queryStringParameters?.universe || '') : '';\nconst config = input.config || {};\nreturn [{\n  json: {\n    ...config,\n    universe: webhookUniverse || config.universe_default || 'SP500',\n    webhook_mode: !!webhookUniverse,\n    timestamp: new Date().toISOString()\n  }\n}];"
+        }
+      },
+      {
+        "id": "571058cb-31bf-4415-8318-dc332b6aef9b",
+        "name": "Agent 1: Universe Loader",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.4,
         "position": [
-          550,
-          50
+          250,
+          0
         ],
         "parameters": {
-          "url": "http://127.0.0.1:18888/agent/universe",
+          "url": "={{ $json.universe_source || $node['CONFIG: All Parameters'].json.universe_source }}",
           "method": "GET",
           "authentication": "none",
           "options": {
@@ -81,16 +181,62 @@
         }
       },
       {
-        "id": "e964d535-ad62-4eb4-8c5e-0d7b3d0e50db",
-        "name": "Agent 2: Prices",
+        "id": "09da0a92-12c2-4d6b-814f-00f2571c4a7a",
+        "name": "ERR: Universe Fallback",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          250,
+          -200
+        ],
+        "parameters": {
+          "jsCode": "// Fallback universe if primary fails\nconsole.error('Universe fetch failed, using hardcoded fallback');\nconst fallback = ['AAPL','MSFT','GOOGL','AMZN','NVDA','META','TSLA','JPM','V','JNJ',\n  'WMT','PG','MA','UNH','HD','DIS','NFLX','ADBE','CRM','INTC','AMD','PYPL','BA','NKE','KO'];\nreturn fallback.map(t => ({ json: { ticker: t } }));"
+        }
+      },
+      {
+        "id": "57269ddc-2751-4443-9c03-2a86e0d1b95c",
+        "name": "Universe OK?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          400,
+          -100
+        ],
+        "parameters": {
+          "conditions": {
+            "string": [
+              {
+                "value1": "={{ $json.ticker }}",
+                "operation": "isNotEmpty"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "f98a1b69-1561-4381-8836-4cc9242b89c1",
+        "name": "Split Into Batches",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          550,
+          0
+        ],
+        "parameters": {
+          "jsCode": "const items = $input.all();\nconst batchSize = parseInt($json.batch_size || $node['CONFIG: All Parameters'].json.batch_size || 50);\nconst tickers = items.map(i => i.json.ticker).filter(Boolean);\nconst batches = [];\nfor (let i = 0; i < tickers.length; i += batchSize) {\n  batches.push({ json: { tickers: tickers.slice(i, i + batchSize), batch: Math.floor(i/batchSize)+1, total_batches: Math.ceil(tickers.length/batchSize) }});\n}\nreturn batches;"
+        }
+      },
+      {
+        "id": "0631e8f1-a01f-45ae-9c59-6d3813ef7fb9",
+        "name": "Agent 2: Fetch Prices",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.4,
         "position": [
-          550,
-          200
+          750,
+          0
         ],
         "parameters": {
-          "url": "http://127.0.0.1:18888/agent/prices",
+          "url": "={{ $node['CONFIG: All Parameters'].json.prices_url }}",
           "method": "POST",
           "authentication": "none",
           "sendBody": true,
@@ -98,7 +244,7 @@
             "parameters": [
               {
                 "name": "tickers",
-                "value": ""
+                "value": "={{ $json.tickers }}"
               }
             ]
           },
@@ -108,16 +254,47 @@
         }
       },
       {
-        "id": "ce6438f2-284f-4d12-92b9-20fbc73ab1ab",
-        "name": "Agent 3: Sentiment",
+        "id": "77d7607a-8a3b-452b-9674-f85a620ea59c",
+        "name": "Prices OK?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          750,
+          -150
+        ],
+        "parameters": {
+          "conditions": {
+            "string": [
+              {
+                "value1": "={{ $json.ticker }}",
+                "operation": "isNotEmpty"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "38abb8a5-4c43-489d-8a5b-6a774ccf070c",
+        "name": "ERR: Prices Failed",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          900,
+          -300
+        ],
+        "parameters": {}
+      },
+      {
+        "id": "0792303a-2bbe-436b-8e96-f7bda8473218",
+        "name": "Agent 3a: Sentiment (HF)",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.4,
         "position": [
-          550,
-          350
+          1000,
+          100
         ],
         "parameters": {
-          "url": "http://127.0.0.1:18888/agent/sentiment",
+          "url": "={{ $node['CONFIG: All Parameters'].json.sentiment_url }}",
           "method": "POST",
           "authentication": "none",
           "sendBody": true,
@@ -125,7 +302,7 @@
             "parameters": [
               {
                 "name": "tickers",
-                "value": ""
+                "value": "={{ $json.tickers }}"
               }
             ]
           },
@@ -135,16 +312,42 @@
         }
       },
       {
-        "id": "b4b3ab4b-db76-4a9e-ba95-4f425e95fd81",
+        "id": "88222c9c-e44b-4434-b302-d7fd2e27965a",
+        "name": "Agent 3b: RAG Memory Retrieve",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1200,
+          100
+        ],
+        "parameters": {
+          "jsCode": "// Simulated RAG memory retrieval\n// In production: query FAISS/Pinecone/Redis for past sentiment data\nconst items = $input.all();\nconst tickers = items.map(i => i.json.ticker).filter(Boolean);\n// Retrieve from Static Data or local cache\nconst staticData = $getStaticData();\nconst memory = staticData.sentimentMemory || {};\nconst enriched = items.map(item => {\n  const t = item.json.ticker;\n  const pastSentiment = memory[t] || null;\n  return {\n    json: {\n      ...item.json,\n      historical_sentiment: pastSentiment ? pastSentiment.avg_sentiment : null,\n      historical_accuracy: pastSentiment ? pastSentiment.accuracy : null,\n      past_predictions: pastSentiment ? pastSentiment.count : 0\n    }\n  };\n});\nreturn enriched;"
+        }
+      },
+      {
+        "id": "9f048b45-7cd8-40d0-a188-05e66e31696e",
+        "name": "Agent 3c: RAG Enhance Sentiment",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1400,
+          100
+        ],
+        "parameters": {
+          "jsCode": "// RAG-enhanced sentiment: blend current sentiment with historical memory\nconst items = $input.all();\nreturn items.map(item => {\n  const j = item.json;\n  const currentSent = j.sentiment_score || j.sentiment || 0;\n  const histSent = j.historical_sentiment;\n  const histCount = j.past_predictions || 0;\n  \n  // Blend: if we have >3 historical entries, trust 30% historical\n  let enhancedScore = currentSent;\n  if (histSent !== null && histCount > 3) {\n    enhancedScore = currentSent * 0.7 + histSent * 0.3;\n  }\n  \n  return {\n    json: {\n      ticker: j.ticker,\n      sentiment_score: enhancedScore,\n      raw_sentiment: currentSent,\n      sentiment_rag_enhanced: histCount > 3,\n      sentiment_history_count: histCount,\n      sentiment_timestamp: new Date().toISOString()\n    }\n  };\n});"
+        }
+      },
+      {
+        "id": "6cee81b0-bed0-4ccd-8a6c-4c24ae32545e",
         "name": "Agent 4: Technicals",
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.4,
         "position": [
-          550,
-          500
+          1000,
+          300
         ],
         "parameters": {
-          "url": "http://127.0.0.1:18888/agent/technicals",
+          "url": "={{ $node['CONFIG: All Parameters'].json.technicals_url }}",
           "method": "POST",
           "authentication": "none",
           "sendBody": true,
@@ -152,7 +355,7 @@
             "parameters": [
               {
                 "name": "tickers",
-                "value": ""
+                "value": "={{ $json.tickers }}"
               }
             ]
           },
@@ -162,13 +365,13 @@
         }
       },
       {
-        "id": "565d0730-9998-4932-b40c-6163f987b736",
-        "name": "Agent 5: Merge Features",
+        "id": "c058107c-0318-4a97-8f57-733a406e8271",
+        "name": "Agent 5a: Merge Sentiment+Technicals",
         "type": "n8n-nodes-base.merge",
         "typeVersion": 2,
         "position": [
-          800,
-          350
+          1600,
+          200
         ],
         "parameters": {
           "mode": "combine",
@@ -177,50 +380,172 @@
         }
       },
       {
-        "id": "97068a73-4806-47cd-bf7b-3db0b355e4c5",
-        "name": "Agent 6: Rank",
+        "id": "1a20c3a0-f239-4626-bfef-912ae2009691",
+        "name": "Agent 5b: Handle Missing Data",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
         "position": [
-          1050,
-          350
+          1800,
+          200
         ],
         "parameters": {
-          "jsCode": "const items = $input.all();\nitems.forEach(item => {\n  const s = item.json.sentiment_score || 0;\n  const m = item.json.momentum_score || 0;\n  const r = item.json.rsi || 50;\n  const v = item.json.volume_ratio || 1;\n  const ret = item.json.return_5d || 0;\n  const rsiC = (r - 50) / 50;\n  const retC = Math.max(-1, Math.min(1, ret * 10));\n  const volC = Math.max(-1, Math.min(1, (v - 1) * 2));\n  item.json.score = rsiC * 0.20 + retC * 0.30 + volC * 0.15 + s * 0.35;\n});\nitems.sort((a, b) => b.json.score - a.json.score);\nreturn items.slice(0, 10).map((x, i) => ({\n  json: {\n    rank: i + 1,\n    ticker: x.json.ticker,\n    confidence: Math.round(x.json.score * 10000) / 10000,\n    rsi: x.json.rsi,\n    volume: x.json.volume_ratio,\n    return_pct: Math.round(x.json.score * 200) / 100,\n    timestamp: new Date().toISOString()\n  }\n}));"
+          "jsCode": "// Handle missing data: fill defaults for any absent fields\nconst items = $input.all();\nreturn items.map(item => {\n  const j = item.json;\n  j.sentiment_score = j.sentiment_score || j.raw_sentiment || 0;\n  j.rsi = j.rsi || 50;\n  j.volume_ratio = j.volume_ratio || 1.0;\n  j.return_1d = j.return_1d || 0;\n  j.return_5d = j.return_5d || 0;\n  return { json: j };\n});"
         }
       },
       {
-        "id": "b80ceedd-dec6-4a10-b6d4-a0785bb5134f",
-        "name": "Agent 7: Log",
+        "id": "fc24f2db-4f27-4522-bb41-cc19a2f1b46b",
+        "name": "Agent 6: Memory Retrieve Past",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1800,
+          0
+        ],
+        "parameters": {
+          "jsCode": "// Retrieve past predictions from static data memory\nconst items = $input.all();\nconst staticData = $getStaticData();\nconst pastRuns = staticData.predictionMemory || {};\n\nreturn items.map(item => {\n  const j = item.json;\n  const t = j.ticker;\n  const past = pastRuns[t] || [];\n  const recent = past.slice(-5); // last 5 predictions\n  const avgConfidence = recent.length > 0 \n    ? recent.reduce((s, r) => s + (r.confidence || 0), 0) / recent.length \n    : 0;\n  const wasCorrect = recent.filter(r => r.actual_outcome && r.actual_outcome > 0).length;\n  const accuracy = recent.length > 0 ? wasCorrect / recent.length : 0;\n  \n  return {\n    json: {\n      ...j,\n      past_prediction_count: recent.length,\n      past_avg_confidence: avgConfidence,\n      past_accuracy: accuracy\n    }\n  };\n});"
+        }
+      },
+      {
+        "id": "10ee32a9-d3c7-4b6d-8293-96ded5a1a654",
+        "name": "Agent 7: Rank & Predict",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2000,
+          200
+        ],
+        "parameters": {
+          "jsCode": "// Read weights from configuration node\nconst config = $node['CONFIG: All Parameters'].json;\nconst wSent = parseFloat(config.weight_sentiment || 0.35);\nconst wRet  = parseFloat(config.weight_return || 0.30);\nconst wRsi  = parseFloat(config.weight_rsi || 0.20);\nconst wVol  = parseFloat(config.weight_volume || 0.15);\nconst topN  = parseInt(config.top_n || 10);\n\nconst items = $input.all();\nitems.forEach(item => {\n  const j = item.json;\n  const s = parseFloat(j.sentiment_score || 0);\n  const ret = parseFloat(j.return_5d || 0);\n  const rsi = parseFloat(j.rsi || 50);\n  const vol = parseFloat(j.volume_ratio || 1);\n  \n  // Normalize RSI: 50 is neutral, 0 is oversold, 100 overbought\n  const rsiN = Math.max(-1, Math.min(1, (rsi - 50) / 50));\n  // Normalize returns: cap at +/- 10%\n  const retN = Math.max(-1, Math.min(1, ret * 10));\n  // Normalize volume: 1.0 = average, cap at 3x\n  const volN = Math.max(-0.5, Math.min(1, (vol - 1) * 2));\n  \n  // Past accuracy boost/reduce\n  const acc = j.past_accuracy || 0.5;\n  const accBoost = (acc - 0.5) * 0.1; // +/- 0.05 boost\n  \n  const score = (s * wSent) + (retN * wRet) + (rsiN * wRsi) + (volN * wVol) + accBoost;\n  \n  j.composite_score = Math.round(score * 10000) / 10000;\n  j.predicted_return = Math.round(score * 200) / 100;\n  j.confidence = Math.round((1 - Math.abs(score)) * 100) / 100;\n  j.scoring_weights = { sentiment: wSent, return: wRet, rsi: wRsi, volume: wVol };\n});\n\nitems.sort((a, b) => b.json.composite_score - a.json.composite_score);\nreturn items.slice(0, topN).map((x, i) => ({\n  json: {\n    rank: i + 1,\n    ticker: x.json.ticker,\n    predicted_return: x.json.predicted_return,\n    confidence: x.json.confidence,\n    composite_score: x.json.composite_score,\n    rsi: x.json.rsi,\n    volume_ratio: x.json.volume_ratio,\n    sentiment_score: x.json.sentiment_score,\n    past_accuracy: x.json.past_accuracy,\n    past_prediction_count: x.json.past_prediction_count,\n    timestamp: new Date().toISOString()\n  }\n}));"
+        }
+      },
+      {
+        "id": "977a7e8d-c1bd-4563-a294-7a0afbf89b17",
+        "name": "Agent 8a: DynamoDB Save",
+        "type": "n8n-nodes-base.awsDynamoDb",
+        "typeVersion": 2,
+        "position": [
+          2200,
+          0
+        ],
+        "parameters": {
+          "operation": "putItem",
+          "tableName": "={{ $node['CONFIG: All Parameters'].json.dynamodb_table }}",
+          "fields": {
+            "ticker": "={{ $json.ticker }}",
+            "date": "={{ $json.timestamp.split('T')[0] }}",
+            "composite_score": "={{ $json.composite_score }}",
+            "predicted_return": "={{ $json.predicted_return }}",
+            "confidence": "={{ $json.confidence }}",
+            "rsi": "={{ $json.rsi }}",
+            "volume_ratio": "={{ $json.volume_ratio }}",
+            "sentiment_score": "={{ $json.sentiment_score }}",
+            "timestamp": "={{ $json.timestamp }}"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "e05cc326-c883-49f4-abd0-7624efab9c3b",
+        "name": "ERR: DynamoDB Failed",
         "type": "n8n-nodes-base.noOp",
         "typeVersion": 1,
         "position": [
-          1300,
-          200
+          2200,
+          -150
         ],
         "parameters": {}
       },
       {
-        "id": "2128eb1b-96f8-4029-9937-241d6687ac7e",
-        "name": "Agent 8: Summary",
+        "id": "2b371bee-dea2-4795-8e4f-3cdfeeda35dd",
+        "name": "Agent 8b: Memory Update",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
         "position": [
-          1300,
-          350
+          2400,
+          0
         ],
         "parameters": {
-          "jsCode": "const items = $input.all();\nconst top3 = items.slice(0, 3);\nconst msg = top3.map((x, i) => (i + 1) + '. ' + x.json.ticker + ': ' + x.json.confidence).join('\\n');\nconsole.log(msg);\nreturn items;"
+          "jsCode": "// Store predictions in static data for future RAG retrieval\nconst items = $input.all();\nconst staticData = $getStaticData();\nconst memory = staticData.predictionMemory || {};\n\nitems.forEach(item => {\n  const j = item.json;\n  const t = j.ticker;\n  if (!memory[t]) memory[t] = [];\n  memory[t].push({\n    date: j.timestamp ? j.timestamp.split('T')[0] : new Date().toISOString().split('T')[0],\n    confidence: j.confidence,\n    predicted_return: j.predicted_return,\n    composite_score: j.composite_score,\n    actual_outcome: null // to be filled later via feedback webhook\n  });\n  // Keep only last 20 predictions per ticker\n  if (memory[t].length > 20) memory[t] = memory[t].slice(-20);\n});\n\n// Also store sentiment memory for RAG enhancement\nconst sentMemory = staticData.sentimentMemory || {};\nitems.forEach(item => {\n  const j = item.json;\n  const t = j.ticker;\n  if (!sentMemory[t]) sentMemory[t] = { sentiments: [], count: 0, avg_sentiment: 0, accuracy: 0.5 };\n  sentMemory[t].sentiments.push(j.sentiment_score || 0);\n  if (sentMemory[t].sentiments.length > 50) sentMemory[t].sentiments = sentMemory[t].sentiments.slice(-50);\n  sentMemory[t].count = sentMemory[t].sentiments.length;\n  sentMemory[t].avg_sentiment = sentMemory[t].sentiments.reduce((a,b) => a+b, 0) / sentMemory[t].count;\n});\n\nstaticData.predictionMemory = memory;\nstaticData.sentimentMemory = sentMemory;\nreturn items;"
         }
       },
       {
-        "id": "cf93d262-9014-4085-a7cb-04b35ca16dd3",
-        "name": "Agent 9: Complete",
+        "id": "fc8386dc-3372-4674-9d68-7ddd3599aba6",
+        "name": "Agent 9a: Console Log",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2200,
+          200
+        ],
+        "parameters": {
+          "jsCode": "// Log to console and return for downstream\nconst items = $input.all();\nconst summary = {\n  run_timestamp: new Date().toISOString(),\n  total_predictions: items.length,\n  top_ticker: items[0]?.json?.ticker || 'N/A',\n  top_score: items[0]?.json?.composite_score || 0,\n  tickers: items.map(i => i.json.ticker)\n};\nconsole.log('=== PREDICTION RUN COMPLETE ===');\nconsole.log(JSON.stringify(summary, null, 2));\nconsole.log('================================');\nreturn [{\n  json: {\n    summary: summary,\n    results: items.map(i => i.json)\n  }\n}];"
+        }
+      },
+      {
+        "id": "5495693c-083b-45f7-95aa-64f781901774",
+        "name": "Agent 9b: Send Alert",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          2400,
+          200
+        ],
+        "parameters": {
+          "url": "={{ $node['CONFIG: All Parameters'].json.alert_webhook || 'http://127.0.0.1:18888/health' }}",
+          "method": "POST",
+          "authentication": "none",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "text",
+                "value": "={{ 'Prediction Run Complete\\nTop: ' + $json.summary.top_ticker + ' (' + $json.summary.top_score + ')' }}"
+              }
+            ]
+          },
+          "options": {
+            "timeout": 10000
+          }
+        }
+      },
+      {
+        "id": "4f04d75a-d4fb-402c-ae9a-eebf522ee80a",
+        "name": "Agent 10: Build Response",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2600,
+          0
+        ],
+        "parameters": {
+          "jsCode": "// Build final JSON response\nconst input = $input.first().json;\nreturn [{\n  json: {\n    status: 'success',\n    run_timestamp: new Date().toISOString(),\n    target_date: new Date(Date.now() + 2*86400000).toISOString().split('T')[0],\n    base_date: new Date().toISOString().split('T')[0],\n    total_predictions: input.summary?.total_predictions || 0,\n    top_gainers: (input.results || []).map(r => ({\n      rank: r.rank,\n      ticker: r.ticker,\n      predicted_return_pct: r.predicted_return,\n      confidence: r.confidence,\n      composite_score: r.composite_score,\n      rsi: r.rsi,\n      volume_ratio: r.volume_ratio,\n      sentiment_score: r.sentiment_score,\n      past_accuracy: r.past_accuracy,\n      scoring_breakdown: {\n        sentiment_weight: r.scoring_weights?.sentiment || 0.35,\n        return_weight: r.scoring_weights?.return || 0.30,\n        rsi_weight: r.scoring_weights?.rsi || 0.20,\n        volume_weight: r.scoring_weights?.volume || 0.15\n      }\n    })),\n    pipeline: {\n      universe_source: $node['CONFIG: All Parameters'].json.universe_source,\n      sentiment_model: 'ahmedrachid/FinancialBERT-Sentiment-Analysis',\n      technical_indicators: ['RSI', 'MACD', 'Bollinger Bands', 'Volume Ratio'],\n      rag_memory_enabled: true,\n      dynamodb_backup: true\n    }\n  }\n}];"
+        }
+      },
+      {
+        "id": "31b15753-67ac-452b-84b5-ef2f5c74493e",
+        "name": "Webhook Response",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          2800,
+          0
+        ],
+        "parameters": {
+          "options": {
+            "responseData": "={{ $json }}",
+            "responseMode": "onReceived"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "id": "199bd9cb-18d6-42e6-9219-f618c3354adc",
+        "name": "Complete",
         "type": "n8n-nodes-base.noOp",
         "typeVersion": 1,
         "position": [
-          1300,
-          500
+          2800,
+          200
         ],
         "parameters": {}
       }
@@ -263,29 +588,102 @@
         "main": [
           [
             {
-              "node": "Agent 1: Universe",
+              "node": "CONFIG: All Parameters",
               "type": "main",
               "index": 0
             }
           ]
         ]
       },
-      "Agent 1: Universe": {
+      "CONFIG: All Parameters": {
         "main": [
           [
             {
-              "node": "Agent 2: Prices",
+              "node": "Parse Webhook Params",
               "type": "main",
               "index": 0
             }
           ]
         ]
       },
-      "Agent 2: Prices": {
+      "Parse Webhook Params": {
         "main": [
           [
             {
-              "node": "Agent 3: Sentiment",
+              "node": "Agent 1: Universe Loader",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 1: Universe Loader": {
+        "main": [
+          [
+            {
+              "node": "Universe OK?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Universe OK?": {
+        "main": [
+          [
+            {
+              "node": "Split Into Batches",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "ERR: Universe Fallback",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "ERR: Universe Fallback": {
+        "main": [
+          [
+            {
+              "node": "Split Into Batches",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Into Batches": {
+        "main": [
+          [
+            {
+              "node": "Agent 2: Fetch Prices",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 2: Fetch Prices": {
+        "main": [
+          [
+            {
+              "node": "Prices OK?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prices OK?": {
+        "main": [
+          [
+            {
+              "node": "Agent 3a: Sentiment (HF)",
               "type": "main",
               "index": 0
             },
@@ -294,14 +692,43 @@
               "type": "main",
               "index": 0
             }
+          ],
+          [
+            {
+              "node": "ERR: Prices Failed",
+              "type": "main",
+              "index": 0
+            }
           ]
         ]
       },
-      "Agent 3: Sentiment": {
+      "Agent 3a: Sentiment (HF)": {
         "main": [
           [
             {
-              "node": "Agent 5: Merge Features",
+              "node": "Agent 3b: RAG Memory Retrieve",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 3b: RAG Memory Retrieve": {
+        "main": [
+          [
+            {
+              "node": "Agent 3c: RAG Enhance Sentiment",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 3c: RAG Enhance Sentiment": {
+        "main": [
+          [
+            {
+              "node": "Agent 5a: Merge Sentiment+Technicals",
               "type": "main",
               "index": 0
             }
@@ -312,39 +739,122 @@
         "main": [
           [
             {
-              "node": "Agent 5: Merge Features",
+              "node": "Agent 5a: Merge Sentiment+Technicals",
               "type": "main",
               "index": 1
             }
           ]
         ]
       },
-      "Agent 5: Merge Features": {
+      "Agent 5a: Merge Sentiment+Technicals": {
         "main": [
           [
             {
-              "node": "Agent 6: Rank",
+              "node": "Agent 5b: Handle Missing Data",
               "type": "main",
               "index": 0
             }
           ]
         ]
       },
-      "Agent 6: Rank": {
+      "Agent 5b: Handle Missing Data": {
         "main": [
           [
             {
-              "node": "Agent 7: Log",
+              "node": "Agent 6: Memory Retrieve Past",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 6: Memory Retrieve Past": {
+        "main": [
+          [
+            {
+              "node": "Agent 7: Rank & Predict",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 7: Rank & Predict": {
+        "main": [
+          [
+            {
+              "node": "Agent 8a: DynamoDB Save",
               "type": "main",
               "index": 0
             },
             {
-              "node": "Agent 8: Summary",
+              "node": "Agent 9a: Console Log",
               "type": "main",
               "index": 0
-            },
+            }
+          ]
+        ]
+      },
+      "Agent 8a: DynamoDB Save": {
+        "main": [
+          [
             {
-              "node": "Agent 9: Complete",
+              "node": "Agent 8b: Memory Update",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 8b: Memory Update": {
+        "main": [
+          [
+            {
+              "node": "Agent 10: Build Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 9a: Console Log": {
+        "main": [
+          [
+            {
+              "node": "Agent 9b: Send Alert",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 9b: Send Alert": {
+        "main": [
+          [
+            {
+              "node": "Complete",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent 10: Build Response": {
+        "main": [
+          [
+            {
+              "node": "Webhook Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook Response": {
+        "main": [
+          [
+            {
+              "node": "Complete",
               "type": "main",
               "index": 0
             }
@@ -353,12 +863,12 @@
       }
     },
     "settings": {
-      "executionOrder": "v1"
+      "executionOrder": "v1",
+      "timezone": "America/New_York"
     },
-    "id": "fb97d647-cfb9-4",
+    "id": "173bda9e-d017-4d19-a80d-ba311e816f08",
     "active": true,
-    "pinData": {},
-    "versionId": "6dc8fae0-e55e-41e2-aadc-329af3a4db25",
+    "versionId": "d2ae8433-78a9-459c-9092-891a0e4c5eb4",
     "tags": []
   }
 ]
