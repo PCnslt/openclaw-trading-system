@@ -199,23 +199,61 @@ class Handler(http.server.BaseHTTPRequestHandler):
     # ========== FULL PIPELINE ==========
     
     def run_full_pipeline(self):
-        """Original full pipeline for backward compatibility."""
+        """Full pipeline with reasoning breakdown and target dates."""
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
-        f = io.StringIO()
+        
         output = {}
+        reasoning = []
+        
         try:
-            with contextlib.redirect_stdout(f):
-                from predict_gainers import main
-                main()
-            for line in f.getvalue().split("\n"):
-                if line.startswith("JSON_OUTPUT:"):
-                    output = json.loads(line[12:])
-            if not output: output = {"stdout": f.getvalue()[-1000:]}
+            # Load universe
+            from predict_gainers import load_universe, compute_score, fetch_yahoo_gainers
+            tickers = load_universe(50)
+            
+            # Score stocks and collect reasoning
+            results = []
+            for t in tickers:
+                r = compute_score(t)
+                if r:
+                    results.append(r)
+                    reasoning.append(r)
+            
+            results.sort(key=lambda x: x['score'], reverse=True)
+            top10 = results[:10]
+            
+            yahoo = fetch_yahoo_gainers()
+            
+            now = datetime.now()
+            target = now + timedelta(days=2)
+            
+            output = {
+                "timestamp": now.isoformat(),
+                "base_date": now.strftime("%Y-%m-%d"),
+                "target_date": target.strftime("%Y-%m-%d"),
+                "stocks_scored": len(results),
+                "stocks_in_universe": len(tickers),
+                "yahoo_actuals_today": [{"symbol": s, "change_pct": p} for s,p in yahoo],
+                "predictions": [{
+                    "rank": i+1, "ticker": r['ticker'],
+                    "predicted_return": round(r['score']*2, 4),
+                    "confidence": r['score'],
+                    "sentiment": r['sentiment'],
+                    "rsi": r['rsi'],
+                    "volume_ratio": r['volume_ratio']
+                } for i, r in enumerate(top10)],
+                "reasoning": reasoning[:20],  # Top 20 with full breakdown
+                "model_chain": [
+                    "ahmedrachid/FinancialBERT-Sentiment-Analysis (sentiment)",
+                    "Technical Indicators (RSI+MACD+Bollinger+Volume)",
+                    "Multi-factor Weighted Scoring"
+                ]
+            }
         except Exception as e:
             output = {"error": str(e), "traceback": traceback.format_exc()}
+        
         self.wfile.write(json.dumps(output, indent=2, default=str).encode("utf-8"))
     
     def send_json(self, code, data):
