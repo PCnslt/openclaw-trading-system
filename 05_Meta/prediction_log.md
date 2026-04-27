@@ -13,3 +13,17 @@ Table: Rank, Ticker, Predicted Return (%)
 ## Entry Log
 
 <!-- Predictions appended here by predict_gainers.py -->
+
+## 2026-04-26 → 2026-04-28
+| Rank | Ticker | Predicted Return |
+|------|--------|-----------------|
+| 1 | PLTR | +0.0000% |
+| 2 | AVGO | +0.0000% |
+| 3 | AMZN | +0.0000% |
+| 4 | MSFT | +0.0000% |
+| 5 | TSLA | +0.0000% |
+| 6 | GOOGL | +0.0000% |
+| 7 | AMD | +0.0000% |
+| 8 | NVDA | +0.0000% |
+| 9 | META | +0.0000% |
+| 10 | AAPL | +0.0000% |

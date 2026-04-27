@@ -45,3 +45,6 @@ _meta.json
 
 # Temp delete dirs
 _nm_del*
+
+# HF pipeline cache
+02_Projects/Top_Gainers_Predictor/.cache_*
