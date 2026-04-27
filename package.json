@@ -1,17 +1,9 @@
 {
-  "dependencies": {
-    "@xenova/transformers": "^2.17.2",
-    "n8n": "^2.17.7"
-  },
-  "name": "openclaw",
+  "name": "openclaw-vault",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "private": true,
+  "description": "OpenClaw trading system vault dependencies",
+  "dependencies": {
+    "@xenova/transformers": "^2.17.2"
+  }
 }

@@ -42,3 +42,6 @@ _meta.json
 # Obsidian workspace (user-specific)
 .obsidian/workspace.json
 .obsidian/graph.json
+
+# Temp delete dirs
+_nm_del*
