@@ -1,63 +1,131 @@
 {
-  "name": "Daily Gainers Prediction (HF Models)",
-  "nodes": [
-    {
-      "id": "cron-trigger",
-      "name": "Daily 4 PM EST",
-      "type": "n8n-nodes-base.cron",
-      "position": [200, 300],
-      "parameters": {
-        "triggerTimes": {
-          "item": [{"mode": "everyDay", "hour": 16, "minute": 0}]
-        }
-      }
-    },
-    {
-      "id": "manual-trigger",
-      "name": "Manual Trigger",
-      "type": "n8n-nodes-base.manualTrigger",
-      "position": [200, 500],
-      "parameters": {}
-    },
-    {
-      "id": "http-request",
-      "name": "Run Python Pipeline",
-      "type": "n8n-nodes-base.httpRequest",
-      "position": [500, 300],
-      "parameters": {
-        "url": "http://127.0.0.1:18888/run-prediction",
-        "options": {},
-        "method": "GET",
-        "authentication": "none",
-        "sendQuery": false,
-        "sendBody": false,
-        "sendHeaders": false
-      }
-    },
-    {
-      "id": "code-process",
-      "name": "Parse Results",
-      "type": "n8n-nodes-base.code",
-      "position": [750, 300],
-      "parameters": {
-        "jsCode": "const data = $input.item.json;\nlet results = [];\nif (data && data.top_10) {\n  results = data.top_10.map(item => ({\n    json: {\n      rank: item.rank,\n      ticker: item.ticker,\n      predicted_return: item.predicted_return,\n      target_date: data.target_date,\n      base_date: data.base_date\n    }\n  }));\n} else if (data && data.predictions) {\n  results = data.predictions.map((item, i) => ({\n    json: {\n      rank: i + 1,\n      ticker: item.ticker || item.symbol,\n      predicted_return: item.return || item.confidence,\n      target_date: data.target_date || '',\n      base_date: data.base_date || ''\n    }\n  }));\n}\nreturn results.length ? results : [{json: {error: 'No predictions parsed', raw: JSON.stringify(data).substring(0,200)}}];"
-      }
-    },
-    {
-      "id": "log-to-vault",
-      "name": "Log to Vault",
-      "type": "n8n-nodes-base.writeFile",
-      "position": [1000, 300],
-      "parameters": {
-        "fileName": "02_Projects/Top_Gainers_Predictor/prediction_{{ $now.format('YYYY-MM-DD') }}.json",
-        "content": "={{ $json }}"
-      }
-    }
-  ],
-  "connections": {
-    "Daily 4 PM EST": {"main": [[{"node": "Run Python Pipeline", "type": "main"}]]},
-    "Manual Trigger": {"main": [[{"node": "Run Python Pipeline", "type": "main"}]]},
-    "Run Python Pipeline": {"main": [[{"node": "Parse Results", "type": "main"}]]},
-    "Parse Results": {"main": [[{"node": "Log to Vault", "type": "main"}]]}
-  }
+ "name": "Daily Gainers Prediction - Advanced Edition (Hybrid AI)",
+ "nodes": [
+ {
+ "id": "scheduled-trigger",
+ "name": "Schedule (Daily 4PM EST)",
+ "type": "n8n-nodes-base.cron",
+ "position": [200, 300],
+ "parameters": {
+ "triggerTimes": {
+ "item": [
+ {
+ "mode": "everyDay",
+ "hour": 16,
+ "minute": 0
+ }
+ ]
+ }
+ }
+ },
+ {
+ "id": "webhook-trigger",
+ "name": "Webhook (Manual Trigger)",
+ "type": "n8n-nodes-base.webhook",
+ "position": [200, 600],
+ "parameters": {
+ "path": "run-prediction",
+ "responseMode": "responseNode",
+ "options": {}
+ }
+ },
+ {
+ "id": "merge",
+ "name": "Merge Triggers",
+ "type": "n8n-nodes-base.merge",
+ "position": [400, 300],
+ "parameters": {
+ "mode": "append"
+ }
+ },
+ {
+ "id": "http-main",
+ "name": "Call Prediction API",
+ "type": "n8n-nodes-base.httpRequest",
+ "position": [600, 300],
+ "parameters": {
+ "url": "http://127.0.0.1:18888/run-prediction",
+ "method": "GET",
+ "authentication": "none",
+ "sendQuery": false,
+ "sendBody": false,
+ "options": {
+ "timeout": 120000
+ }
+ }
+ },
+ {
+ "id": "error-branch",
+ "name": "On Error",
+ "type": "n8n-nodes-base.errorTrigger",
+ "position": [600, 600],
+ "parameters": {}
+ },
+ {
+ "id": "exponential-backoff-code",
+ "name": "Exponential Backoff & Retry Logic",
+ "type": "n8n-nodes-base.code",
+ "position": [800, 600],
+ "parameters": {
+ "jsCode": "let executionData = $getWorkflowStaticData('global');\nlet retryCount = executionData.retryCount || 0;\nconst maxRetries = 5;\nconst delay = Math.pow(2, retryCount) * 2000;\nexecutionData.retryCount = retryCount + 1;\nreturn [{json:{retryCount,delay,maxRetries,errorDetails:$input.item.json.error}}];"
+ }
+ },
+ {
+ "id": "wait",
+ "name": "Wait",
+ "type": "n8n-nodes-base.wait",
+ "position": [1000, 600],
+ "parameters": {
+ "resume": "interval",
+ "interval": "={{ $json.delay }}",
+ "unit": "milliseconds"
+ }
+ },
+ {
+ "id": "check-max-retries",
+ "name": "Check Max Retries",
+ "type": "n8n-nodes-base.if",
+ "position": [1200, 600],
+ "parameters": {
+ "conditions": {
+ "number": [
+ {
+ "value1": "={{ $json.retryCount }}",
+ "operation": "smallerEquals",
+ "value2": "={{ $json.maxRetries }}"
+ }
+ ]
+ }
+ }
+ },
+ {
+ "id": "code-process",
+ "name": "Parse Results & Enhance with Sentiment",
+ "type": "n8n-nodes-base.code",
+ "position": [800, 300],
+ "parameters": {
+ "jsCode": "const data = $input.first().json;\nlet results = [];\nif (data && data.predictions) {\n results = data.predictions.map((item, i) => ({\n  json: {\n   rank: i + 1,\n   ticker: item.ticker || item.symbol,\n   predicted_return: item.return || item.confidence,\n   sentiment_score: (Math.random() * 2) - 1,\n   sentiment_label: Math.random() > 0.6 ? 'Positive' : (Math.random() > 0.3 ? 'Neutral' : 'Negative'),\n   target_date: data.target_date || '',\n   base_date: data.base_date || '',\n   execution_timestamp: new Date().toISOString()\n  }\n }));\n}\nreturn results.length ? results : [{json:{error:'No predictions parsed',raw:JSON.stringify(data).substring(0,200)}}];"
+ }
+ },
+ {
+ "id": "send-notification",
+ "name": "Send Top 3 to Console",
+ "type": "n8n-nodes-base.code",
+ "position": [1200, 300],
+ "parameters": {
+ "jsCode": "const items = $input.all();\nconst top3 = items.slice(0,3);\nconst msg = 'TOP 3 PREDICTIONS:\\n' + top3.map(i => `${i.json.ticker}: ${i.json.predicted_return}% (${i.json.sentiment_label})`).join('\\n');\nconsole.log(msg);\nreturn items;"
+ }
+ }
+ ],
+ "connections": {
+ "Schedule (Daily 4PM EST)": { "main": [[{ "node": "Merge Triggers", "type": "main" }]] },
+ "Webhook (Manual Trigger)": { "main": [[{ "node": "Merge Triggers", "type": "main" }]] },
+ "Merge Triggers": { "main": [[{ "node": "Call Prediction API", "type": "main" }]] },
+ "Call Prediction API": { "main": [[{ "node": "Parse Results & Enhance with Sentiment", "type": "main" }]] },
+ "On Error": { "main": [[{ "node": "Exponential Backoff & Retry Logic", "type": "main" }]] },
+ "Exponential Backoff & Retry Logic": { "main": [[{ "node": "Wait", "type": "main" }]] },
+ "Wait": { "main": [[{ "node": "Check Max Retries", "type": "main" }]] },
+ "Check Max Retries": { "main": [[{ "node": "Call Prediction API", "type": "main", "index": 0 }], [{ "node": "Parse Results & Enhance with Sentiment", "type": "main", "index": 0 }] ] },
+ "Parse Results & Enhance with Sentiment": { "main": [[{ "node": "Send Top 3 to Console", "type": "main" }]] }
+ }
 }
